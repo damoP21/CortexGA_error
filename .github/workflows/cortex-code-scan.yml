@@ -55,6 +55,4 @@ jobs:
         ./cortexcli --version
 
     - name: Run Cortex CLI Code Scan
-      run: |
-        # This is now a single-line command to ensure all arguments are passed correctly.
-        ./cortexcli code scan --api-base-url "${{ secrets.CORTEX_API_URL }}" --api-key "${{ secrets.CORTEX_API_KEY }}" --api-key-id "${{ secrets.CORTEX_API_KEY_ID }}" --directory "${{ github.workspace }}" --repo-id "${{ github.repository }}" --branch "${{ github.ref_name }}" --source "GITHUB_ACTIONS" --create-repo-if-missing
+      run: ./cortexcli code scan --api-base-url "${{ secrets.CORTEX_API_URL }}" --api-key "${{ secrets.CORTEX_API_KEY }}" --api-key-id "${{ secrets.CORTEX_API_KEY_ID }}" --directory "${{ github.workspace }}" --repo-id "${{ github.repository }}" --branch "${{ github.ref_name }}" --source "GITHUB_ACTIONS" --create-repo-if-missing
