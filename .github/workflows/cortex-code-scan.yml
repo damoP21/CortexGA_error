@@ -55,9 +55,24 @@ jobs:
         ./cortexcli --version
 
     - name: Run Cortex CLI Code Scan
+      shell: bash
       run: |
-        # Make the script executable
-        chmod +x .github/scripts/run_cortex_scan.sh
+        # Explicitly export all required variables to the shell environment
+        export CORTEX_API_KEY=${{ secrets.CORTEX_API_KEY }}
+        export CORTEX_API_KEY_ID=${{ secrets.CORTEX_API_KEY_ID }}
+        export GITHUB_WORKSPACE=${{ github.workspace }}
+        export GITHUB_REPOSITORY=${{ github.repository }}
+        export GITHUB_REF_NAME=${{ github.ref_name }}
 
+        # Debugging Step: Print the environment variables to verify they are set
+        echo "--- DEBUGGING: VERIFYING ENVIRONMENT VARIABLES ---"
+        echo "CORTEX_API_KEY_ID is: $CORTEX_API_KEY_ID"
+        echo "GITHUB_WORKSPACE is: $GITHUB_WORKSPACE"
+        echo "GITHUB_REPOSITORY is: $GITHUB_REPOSITORY"
+        echo "------------------------------------------------"
+
+        # Make the script executable and run it
+        chmod +x .github/scripts/run_cortex_scan.sh
+        .github/scripts/run_cortex_scan.sh
         # Execute the script
         .github/scripts/run_cortex_scan.sh
