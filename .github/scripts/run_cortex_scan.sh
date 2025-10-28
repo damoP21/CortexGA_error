@@ -41,7 +41,9 @@ echo "Running Cortex CLI Code Scan..."
 echo "DEBUG (final): ./cortexcli code scan --api-base-url '$CORTEX_API_URL'"
 
 # Run the Cortex CLI scan
-./cortexcli code scan \
+echo "Trying Cortex CLI Code Scan (standard flag order)..."
+
+if ! ./cortexcli code scan \
   --api-base-url "$CORTEX_API_URL" \
   --api-key "$CORTEX_API_KEY" \
   --api-key-id "$CORTEX_API_KEY_ID" \
@@ -49,6 +51,23 @@ echo "DEBUG (final): ./cortexcli code scan --api-base-url '$CORTEX_API_URL'"
   --repo-id "$GITHUB_REPOSITORY" \
   --branch "$GITHUB_REF_NAME" \
   --source "GITHUB_ACTIONS" \
-  --create-repo-if-missing
+  --create-repo-if-missing; then
+
+  echo "Standard flag order failed — retrying with global flags before subcommand..."
+  
+  ./cortexcli \
+    --api-base-url "$CORTEX_API_URL" \
+    --api-key "$CORTEX_API_KEY" \
+    --api-key-id "$CORTEX_API_KEY_ID" \
+    code scan \
+    --directory "$GITHUB_WORKSPACE" \
+    --repo-id "$GITHUB_REPOSITORY" \
+    --branch "$GITHUB_REF_NAME" \
+    --source "GITHUB_ACTIONS" \
+    --create-repo-if-missing || {
+      echo "Both formats failed."
+      exit 2
+    }
+fi
 
 echo "Cortex CLI Code Scan completed successfully."
