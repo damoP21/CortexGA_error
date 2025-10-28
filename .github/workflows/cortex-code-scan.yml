@@ -1,0 +1,74 @@
+name: cortex-code-scan
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  cortex-code-scan:
+    # Use ubuntu-latest runner unless you have a custom runner named "sharednp2"
+    runs-on: ubuntu-latest
+    env:
+      CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
+      CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
+      CORTEX_API_URL: https://api-ri.xdr.us.paloaltonetworks.com/
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install prerequisites (jq, curl)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq curl
+
+      - name: Download cortexcli
+        run: |
+          set -x
+          crtx_resp=$(curl "${CORTEX_API_URL}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
+            -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
+            -H "Authorization: ${CORTEX_API_KEY}")
+          echo "download link response: $crtx_resp"
+          crtx_url=$(echo "$crtx_resp" | jq -r ".signed_url")
+          if [ -z "$crtx_url" ] || [ "$crtx_url" = "null" ]; then
+            echo "Failed to obtain signed_url from API. Response: $crtx_resp"
+            exit 1
+          fi
+          curl -o cortexcli "$crtx_url"
+          chmod +x cortexcli
+          ./cortexcli --version
+
+      - name: Run Cortex CLI Code Scan
+        id: code_scan
+        run: |
+          set -o pipefail
+          ./cortexcli \
+            --api-base-url "${CORTEX_API_URL}" \
+            --api-key "${CORTEX_API_KEY}" \
+            --api-key-id "${CORTEX_API_KEY_ID}" \
+            code scan \
+            --directory "${{ github.workspace }}" \
+            --repo-id "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}" \
+            --source "GITHUB_ACTIONS" \
+            --create-repo-if-missing 2>&1 | tee /tmp/cortexcli-run.log || true
+          ret=$?
+          if [ $ret -ne 0 ]; then
+            echo "cortexcli exit code: $ret"
+            echo "------- cortexcli log (tail) -------"
+            tail -n +1 /tmp/cortexcli-run.log || true
+            # If the CLI saved a separate log, print it:
+            if ls /tmp/cortexcli-*.log 1> /dev/null 2>&1; then
+              echo "------- saved cortexcli log files -------"
+              ls -l /tmp/cortexcli-*.log
+              for f in /tmp/cortexcli-*.log; do
+                echo ">>> LOG: $f"
+                tail -n 200 "$f"
+              done
+            fi
+            # Fail the job so GitHub action marks it as failed
+            exit $ret
+          fi
+
+      - name: Success message
+        if: success()
+        run: echo "Cortex code scan completed successfully."
