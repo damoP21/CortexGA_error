@@ -14,7 +14,7 @@ echo "Running Cortex CLI Code Scan..."
 
 # Execute the code scan command, passing all arguments directly.
 ./cortexcli code scan \
-  --api-base-url "$CORTEX_API_URL" \
+  --api-base-url "https://api-pcscortexcloud.xdr.us.paloaltonetworks.com/" \
   --api-key "$CORTEX_API_KEY" \
   --api-key-id "$CORTEX_API_KEY_ID" \
   --directory "$GITHUB_WORKSPACE" \
