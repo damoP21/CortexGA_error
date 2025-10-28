@@ -1,6 +1,6 @@
 ## This workflow runs a Cortex code scan on your repository.
 ## It requires three secrets to be configured in your GitHub repository settings:
-## CORTEX_API_KEY: Your Cortex API Key with "With upload results permissions".
+### CORTEX_API_KEY: Your Cortex API Key with "With upload results permissions".
 ## CORTEX_API_KEY_ID: The ID for your Cortex API Key.
 ## CORTEX_API_URL: The API endpoint for your Cortex tenant (e.g., https://api-ri.xdr.us.paloaltonetworks.com/).
 
