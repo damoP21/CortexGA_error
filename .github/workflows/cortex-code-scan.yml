@@ -4,14 +4,15 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   cortex-code-scan:
-    runs-on: ubuntu-latest   # You can change back to 'sharednp2' if that’s your runner label
+    runs-on: ubuntu-latest   # Change to 'sharednp2' if you have a self-hosted runner
     env:
       CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
       CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
-      CORTEX_API_URL: https://api-us.xdr.paloaltonetworks.com   # Change this if your region differs
+      CORTEX_API_URL: https://api-ri.xdr.us.paloaltonetworks.com   # Replace with your Cortex region
 
     steps:
       - name: Checkout Repository
@@ -24,6 +25,12 @@ jobs:
 
       - name: Verify Node.js Version
         run: node -v
+
+      - name: Test DNS and network connectivity
+        run: |
+          echo "Testing Cortex API URL: $CORTEX_API_URL"
+          nslookup ${CORTEX_API_URL#https://} || (echo "DNS resolution failed"; exit 1)
+          curl -I "$CORTEX_API_URL" || (echo "Cannot reach Cortex API endpoint"; exit 1)
 
       - name: Debug environment variables (no secrets shown)
         run: |
@@ -38,7 +45,7 @@ jobs:
             -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
             -H "Authorization: ${CORTEX_API_KEY}")
           
-          echo "Response: $crtx_resp"
+          echo "Download link response: $crtx_resp"
           crtx_url=$(echo "$crtx_resp" | jq -r ".reply.signed_url")
 
           if [ -z "$crtx_url" ] || [ "$crtx_url" = "null" ]; then
