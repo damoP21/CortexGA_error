@@ -55,4 +55,9 @@ jobs:
         ./cortexcli --version
 
     - name: Run Cortex CLI Code Scan
-      run: ./cortexcli code scan --api-base-url "${{ secrets.CORTEX_API_URL }}" --api-key "${{ secrets.CORTEX_API_KEY }}" --api-key-id "${{ secrets.CORTEX_API_KEY_ID }}" --directory "${{ github.workspace }}" --repo-id "${{ github.repository }}" --branch "${{ github.ref_name }}" --source "GITHUB_ACTIONS" --create-repo-if-missing
+      run: |
+        # Make the script executable
+        chmod +x .github/scripts/run_cortex_scan.sh
+
+        # Execute the script
+        .github/scripts/run_cortex_scan.sh
