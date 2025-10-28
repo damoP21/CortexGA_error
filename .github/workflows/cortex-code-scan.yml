@@ -1,8 +1,8 @@
-## This workflow runs a Cortex code scan on your repository.
-## It requires three secrets to be configured in your GitHub repository settings:
-### CORTEX_API_KEY: Your Cortex API Key with "With upload results permissions".
-## CORTEX_API_KEY_ID: The ID for your Cortex API Key.
-## CORTEX_API_URL: The API endpoint for your Cortex tenant (e.g., https://api-ri.xdr.us.paloaltonetworks.com/).
+# This workflow runs a Cortex code scan on your repository.
+# It requires three secrets to be configured in your GitHub repository settings:
+# CORTEX_API_KEY: Your Cortex API Key with "With upload results permissions".
+# CORTEX_API_KEY_ID: The ID for your Cortex API Key.
+# CORTEX_API_URL: The API endpoint for your Cortex tenant.
 
 name: Cortex Code Scan
 
@@ -31,19 +31,18 @@ jobs:
       run: |
         # Check if the API URL secret is set before proceeding
         if [ -z "${CORTEX_API_URL}" ]; then
-          echo "Error: CORTEX_API_URL secret is not set or empty."
+          echo "Error: CORTEX_API_URL secret is not set or empty. Please configure it in repository settings."
           exit 1
         fi
 
         echo "Attempting to download CLI from: ${CORTEX_API_URL}"
 
         # Use API key to get a signed URL for the Cortex CLI download
-        # The -f, --fail-with-body flag ensures curl fails with an error if the HTTP request returns an error code (like 401)
-        crtx_resp=$(curl -sS --fail-with-body "${CORTEX_API_URL}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
+        crtx_resp=$(curl -sS --fail-with-body "${CORTEX_API_URL}public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
           -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
           -H "Authorization: ${CORTEX_API_KEY}")
 
-        # Extract the URL and download the CLI. The script will fail here if crtx_resp is an error message.
+        # Extract the URL and download the CLI.
         crtx_url=$(echo "$crtx_resp" | jq -r ".signed_url")
         if [ "$crtx_url" = "null" ] || [ -z "$crtx_url" ]; then
           echo "Error: Failed to get Cortex CLI download URL. The API response was:"
@@ -61,7 +60,7 @@ jobs:
     - name: Run Cortex CLI Code Scan
       run: |
         # Pass credentials directly to the command for robustness.
-        # These are sourced from the secrets context, not env context, for security best practice.
+        # These are sourced from the secrets context, which is a security best practice.
         ./cortexcli code scan \
           --api-base-url "${{ secrets.CORTEX_API_URL }}" \
           --api-key "${{ secrets.CORTEX_API_KEY }}" \
