@@ -8,15 +8,14 @@ on:
 
 jobs:
   cortex-code-scan:
-    runs-on: ubuntu-latest   # Change to 'sharednp2' if you have a self-hosted runner
+    runs-on: sharednp2
     env:
       CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
       CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
-      CORTEX_API_URL: https://api-ri.xdr.us.paloaltonetworks.com   # Replace with your Cortex region
-
+      CORTEX_API_URL: https://api-ri.xdr.us.paloaltonetworks.com
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -26,45 +25,23 @@ jobs:
       - name: Verify Node.js Version
         run: node -v
 
-      - name: Test DNS and network connectivity
+      - name: Download cortexcli
         run: |
-          echo "Testing Cortex API URL: $CORTEX_API_URL"
-          nslookup ${CORTEX_API_URL#https://} || (echo "DNS resolution failed"; exit 1)
-          curl -I "$CORTEX_API_URL" || (echo "Cannot reach Cortex API endpoint"; exit 1)
-
-      - name: Debug environment variables (no secrets shown)
-        run: |
-          echo "Using Cortex API URL: $CORTEX_API_URL"
-          echo "Using Cortex API Key ID: ${CORTEX_API_KEY_ID:0:4}****"
-
-      - name: Download Cortex CLI
-        run: |
-          set -euo pipefail
-          echo "Requesting Cortex CLI download link..."
-          crtx_resp=$(curl -sS "${CORTEX_API_URL}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
+          set -x
+          crtx_resp=$(curl "${CORTEX_API_URL}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
             -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
             -H "Authorization: ${CORTEX_API_KEY}")
-          
-          echo "Download link response: $crtx_resp"
-          crtx_url=$(echo "$crtx_resp" | jq -r ".reply.signed_url")
-
-          if [ -z "$crtx_url" ] || [ "$crtx_url" = "null" ]; then
-            echo "Failed to obtain signed URL from Cortex API."
-            exit 1
-          fi
-
-          echo "Downloading Cortex CLI from: $crtx_url"
-          curl -sSL -o cortexcli "$crtx_url"
+          crtx_url=$(echo $crtx_resp | jq -r ".signed_url")
+          curl -o cortexcli $crtx_url
           chmod +x cortexcli
           ./cortexcli --version
 
       - name: Run Cortex CLI Code Scan
         run: |
-          set -euo pipefail
           ./cortexcli \
-            --api-base-url "$CORTEX_API_URL" \
-            --api-key "$CORTEX_API_KEY" \
-            --api-key-id "$CORTEX_API_KEY_ID" \
+            --api-base-url "${CORTEX_API_URL}" \
+            --api-key "${CORTEX_API_KEY}" \
+            --api-key-id "${CORTEX_API_KEY_ID}" \
             code scan \
             --directory "${{ github.workspace }}" \
             --repo-id "${{ github.repository }}" \
